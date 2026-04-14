@@ -1,0 +1,45 @@
+<launch>
+  <!-- Dynamic target filtering frontend for event SLAM -->
+  <arg name="event_topic" default="/events"/>
+  <arg name="imu_topic" default="/imu"/>
+  <arg name="event_msg_type" default="std_msgs/String"/>
+
+  <node pkg="event_slam_dynamic"
+        type="dynamic_filter_node.py"
+        name="dynamic_filter_node"
+        output="screen">
+    <!-- Topic and message-type parameters -->
+    <param name="event_topic" value="$(arg event_topic)"/>
+    <param name="imu_topic" value="$(arg imu_topic)"/>
+    <param name="event_msg_type" value="$(arg event_msg_type)"/>
+
+    <!-- Runtime parameters -->
+    <param name="processing_rate_hz" value="20.0"/>
+    <param name="event_window_sec" value="0.05"/>
+    <param name="max_buffer_sec" value="2.0"/>
+    <param name="refractory_us" value="200.0"/>
+    <param name="isolated_dt_us" value="3000.0"/>
+    <param name="isolated_radius" value="2"/>
+
+    <param name="max_corners_per_window" value="150"/>
+    <param name="corner_score_threshold" value="0.3"/>
+
+    <param name="track_max_age_sec" value="0.2"/>
+    <param name="track_min_length" value="3"/>
+    <param name="match_distance_threshold" value="5.0"/>
+    <param name="match_dt_threshold" value="0.05"/>
+
+    <param name="dynamic_residual_threshold" value="2.5"/>
+    <param name="static_residual_threshold" value="1.0"/>
+    <param name="dynamic_confirm_count" value="3"/>
+
+    <param name="heartbeat_interval_sec" value="3.0"/>
+    <param name="enable_clustering" value="true"/>
+    <param name="enable_debug_vis" value="true"/>
+
+    <!-- remap examples -->
+    <remap from="~static_tracks" to="/event_slam/static_tracks"/>
+    <remap from="~dynamic_tracks" to="/event_slam/dynamic_tracks"/>
+    <remap from="~debug" to="/event_slam/debug"/>
+  </node>
+</launch>
