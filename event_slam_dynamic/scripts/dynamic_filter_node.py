@@ -63,6 +63,7 @@ class DynamicFilterNode:
         self._last_corner_count = 0
         self._last_dynamic_count = 0
         self._last_active_track_count = 0
+        self._last_processed_event_t: Optional[float] = None
 
         self.static_pub = rospy.Publisher(self.cfg.static_tracks_topic, String, queue_size=10)
         self.dynamic_pub = rospy.Publisher(self.cfg.dynamic_tracks_topic, String, queue_size=10)
@@ -127,6 +128,9 @@ class DynamicFilterNode:
                 return
 
             t_end = window_events[-1].t
+            if self._last_processed_event_t is not None and t_end <= self._last_processed_event_t:
+                self._heartbeat()
+                return
             t_start = t_end - self.cfg.event_window_sec
             imu_samples = self.imu_buffer.get_imu_in_window(t_start, t_end)
 
@@ -148,6 +152,7 @@ class DynamicFilterNode:
             self._last_corner_count = len(corners)
             self._last_dynamic_count = len(dynamic_tracks)
             self._last_active_track_count = len(active_tracks)
+            self._last_processed_event_t = t_end
             self._heartbeat()
         except Exception as exc:
             rospy.logerr("[dynamic_filter] processing exception: %s", str(exc))
