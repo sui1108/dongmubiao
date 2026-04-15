@@ -129,6 +129,7 @@ class DynamicFilterNode:
 
             t_end = window_events[-1].t
             if self._last_processed_event_t is not None and t_end <= self._last_processed_event_t:
+                rospy.logdebug_throttle(5.0, "[dynamic_filter] skipping stale event window at t=%.6f", t_end)
                 self._heartbeat()
                 return
             t_start = t_end - self.cfg.event_window_sec

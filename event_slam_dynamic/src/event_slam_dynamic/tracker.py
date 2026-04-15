@@ -25,8 +25,12 @@ class ShortTrackTracker:
 
         self._tracks: Dict[int, TrackState] = {}
         self._next_track_id = 1
+        self._last_update_time: Optional[float] = None
 
     def update(self, corners: List[Corner], current_time: float) -> List[TrackState]:
+        if self._last_update_time is not None and current_time <= self._last_update_time:
+            return self.get_active_tracks()
+
         unmatched_track_ids = set(self._tracks.keys())
         for c in corners:
             best_id = self._find_best_track(c)
@@ -37,6 +41,7 @@ class ShortTrackTracker:
                 unmatched_track_ids.discard(best_id)
 
         self.prune_stale_tracks(current_time)
+        self._last_update_time = current_time
         return self.get_active_tracks()
 
     def _find_best_track(self, corner: Corner) -> Optional[int]:
