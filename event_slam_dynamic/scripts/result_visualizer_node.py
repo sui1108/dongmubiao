@@ -64,8 +64,9 @@ class ResultVisualizerNode:
         self.latest_static: List[Dict[str, object]] = []
         self.latest_dynamic: List[Dict[str, object]] = []
         self.latest_uncertain: List[Dict[str, object]] = []
+        self.latest_clusters: List[Dict[str, object]] = []
         self.latest_debug: Dict[str, object] = {}
-        self.window_idx = 0
+        self.visual_frame_idx = 0
 
         self.sub_event = rospy.Subscriber(self.event_topic, String, self._on_events, queue_size=5)
         self.sub_static = rospy.Subscriber(self.static_topic, String, self._on_static, queue_size=5)
@@ -98,21 +99,23 @@ class ResultVisualizerNode:
         self.summary.update_from_debug(payload)
         self.writer.append("debug", payload)
 
-    def _on_timer(self, _event: rospy.timer.TimerEvent) -> None:
-        self.window_idx += 1
         clusters = [c.to_dict() for c in self.clusterer.cluster(self.latest_dynamic)]
+        self.latest_clusters = clusters
         self.summary.update_clusters(len(clusters))
 
         cluster_payload = {
             "schema_version": "1.0",
-            "timestamp": rospy.Time.now().to_sec(),
-            "window_index": self.window_idx,
+            "timestamp": float(payload.get("timestamp", rospy.Time.now().to_sec())),
+            "window_index": int(payload.get("window_index", self.summary.windows)),
             "clusters": clusters,
         }
         self.writer.append("clusters", cluster_payload)
 
+    def _on_timer(self, _event: rospy.timer.TimerEvent) -> None:
+        self.visual_frame_idx += 1
+
         marker_tracks = build_track_markers(self.latest_static, self.latest_dynamic)
-        marker_clusters = build_cluster_markers(clusters, base_id=20000)
+        marker_clusters = build_cluster_markers(self.latest_clusters, base_id=20000)
         marker_tracks.markers.extend(marker_clusters.markers)
         self.pub_markers.publish(marker_tracks)
 
@@ -124,7 +127,7 @@ class ResultVisualizerNode:
             f"corners: {int(stats.get('corner_count', 0))}",
             f"active_tracks: {int(stats.get('active_track_count', len(self.latest_static) + len(self.latest_dynamic)))}",
             f"dynamic_tracks: {len(self.latest_dynamic)}",
-            f"dynamic_clusters: {len(clusters)}",
+            f"dynamic_clusters: {len(self.latest_clusters)}",
         ]
 
         frame = self.composer.compose(
@@ -132,13 +135,13 @@ class ResultVisualizerNode:
             static_tracks=self.latest_static,
             dynamic_tracks=self.latest_dynamic,
             uncertain_tracks=self.latest_uncertain,
-            clusters=clusters,
+            clusters=self.latest_clusters,
             info_lines=lines,
             use_event_accum=self.use_event_background,
         )
 
-        if self.save_snapshots and self.window_idx % max(1, self.snapshot_interval) == 0:
-            out_path = Path(self.run_manager.run_dir) / "snapshots" / f"frame_{self.window_idx:06d}.png"
+        if self.save_snapshots and self.visual_frame_idx % max(1, self.snapshot_interval) == 0:
+            out_path = Path(self.run_manager.run_dir) / "snapshots" / f"frame_{self.visual_frame_idx:06d}.png"
             cv2.imwrite(str(out_path), frame)
             self.summary.snapshots.append(str(out_path))
 
