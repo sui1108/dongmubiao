@@ -4,8 +4,22 @@
 from __future__ import annotations
 
 import json
+import os
+from pathlib import Path
+
 import rospy
 from std_msgs.msg import String
+
+
+def resolve_raw_path(raw_path: str) -> Path:
+    expanded = os.path.expanduser(raw_path)
+    abs_path = os.path.abspath(expanded)
+    resolved = Path(abs_path).resolve()
+    if not resolved.exists():
+        raise FileNotFoundError(f"RAW file not found: {resolved}")
+    if resolved.stat().st_size <= 0:
+        raise RuntimeError(f"RAW file empty: {resolved}")
+    return resolved
 
 
 def main() -> None:
@@ -20,12 +34,23 @@ def main() -> None:
         rospy.logerr("~raw_path is required when bridge is enabled")
         return
 
-    from metavision_core.event_io import EventsIterator, LiveReplayEventsIterator
+    try:
+        from metavision_core.event_io import EventsIterator, LiveReplayEventsIterator
+    except Exception as exc:
+        rospy.logerr(f"metavision_core dependency missing: {exc}")
+        return
+
+    try:
+        resolved = resolve_raw_path(raw_path)
+    except Exception as exc:
+        rospy.logerr(str(exc))
+        return
 
     pub = rospy.Publisher(topic, String, queue_size=5)
-    it = EventsIterator(input_path=raw_path, delta_t=delta_t_us)
+    it = EventsIterator(input_path=str(resolved), delta_t=delta_t_us)
     replay_it = LiveReplayEventsIterator(it, replay_factor=replay_factor)
     start_us = None
+    rospy.loginfo(f"RAW bridge input: {resolved}")
 
     for evs in replay_it:
         if rospy.is_shutdown():

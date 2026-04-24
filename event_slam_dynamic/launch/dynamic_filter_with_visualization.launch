@@ -1,26 +1,62 @@
 <launch>
-  <!-- Core topics -->
   <arg name="event_topic" default="/events"/>
   <arg name="static_topic" default="/event_slam/static_tracks"/>
   <arg name="dynamic_topic" default="/event_slam/dynamic_tracks"/>
   <arg name="debug_topic" default="/event_slam/debug"/>
+  <arg name="width" default="640"/>
+  <arg name="height" default="480"/>
 
-  <!-- Optional raw bridge -->
   <arg name="start_raw_bridge" default="false"/>
   <arg name="bridge_raw_path" default=""/>
   <arg name="bridge_delta_t_us" default="5000"/>
   <arg name="bridge_replay_factor" default="1.0"/>
   <arg name="bridge_max_duration_us" default="-1"/>
 
-  <!-- Run outputs -->
   <arg name="run_root" default="$(env HOME)/event_slam_runs"/>
   <arg name="run_note" default=""/>
+  <arg name="show_window" default="true"/>
+  <arg name="save_every_window" default="true"/>
 
   <node pkg="event_slam_dynamic" type="dynamic_filter_node.py" name="dynamic_filter_node" output="screen">
     <param name="event_topic" value="$(arg event_topic)"/>
     <param name="static_topic" value="$(arg static_topic)"/>
     <param name="dynamic_topic" value="$(arg dynamic_topic)"/>
     <param name="debug_topic" value="$(arg debug_topic)"/>
+    <param name="width" value="$(arg width)"/>
+    <param name="height" value="$(arg height)"/>
+    <param name="refractory_us" value="80"/>
+    <param name="support_radius" value="1"/>
+    <param name="support_dt_us" value="3000"/>
+    <param name="min_support_count" value="1"/>
+    <param name="hot_pixel_count_threshold" value="120"/>
+    <param name="min_event_keep_ratio" value="0.12"/>
+    <param name="arc_small_radius" value="3"/>
+    <param name="arc_large_radius" value="4"/>
+    <param name="arc_min_length" value="3"/>
+    <param name="arc_max_length" value="10"/>
+    <param name="corner_score_threshold" value="1500.0"/>
+    <param name="nms_radius" value="2"/>
+    <param name="max_corners_per_window" value="300"/>
+    <param name="grid_rows" value="6"/>
+    <param name="grid_cols" value="8"/>
+    <param name="max_corners_per_cell" value="12"/>
+    <param name="match_radius_px" value="8.0"/>
+    <param name="match_dt_us" value="30000"/>
+    <param name="min_track_len" value="4"/>
+    <param name="max_track_age" value="6"/>
+    <param name="max_track_history" value="15"/>
+    <param name="velocity_smooth_alpha" value="0.6"/>
+    <param name="dynamic_residual_threshold" value="0.00055"/>
+    <param name="static_residual_threshold" value="0.00025"/>
+    <param name="dynamic_confirm_count" value="2"/>
+    <param name="static_confirm_count" value="2"/>
+    <param name="fallback_enable" value="true"/>
+    <param name="fallback_dynamic_ratio_min" value="0.05"/>
+    <param name="adaptive_threshold_enable" value="true"/>
+    <param name="cluster_spatial_threshold" value="45.0"/>
+    <param name="cluster_velocity_cos_threshold" value="0.3"/>
+    <param name="cluster_min_tracks" value="2"/>
+    <param name="cluster_lost_tolerance_frames" value="3"/>
   </node>
 
   <node pkg="event_slam_dynamic" type="result_visualizer_node.py" name="result_visualizer_node" output="screen">
@@ -36,6 +72,10 @@
     <param name="bridge_delta_t_us" value="$(arg bridge_delta_t_us)"/>
     <param name="bridge_replay_factor" value="$(arg bridge_replay_factor)"/>
     <param name="bridge_max_duration_us" value="$(arg bridge_max_duration_us)"/>
+    <param name="show_window" value="$(arg show_window)"/>
+    <param name="save_every_window" value="$(arg save_every_window)"/>
+    <param name="save_detection_frames" value="true"/>
+    <param name="detection_frame_dir_name" value="all_detection_frames"/>
   </node>
 
   <group if="$(arg start_raw_bridge)">

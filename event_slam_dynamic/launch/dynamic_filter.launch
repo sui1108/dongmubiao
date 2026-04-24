@@ -1,0 +1,12 @@
+<launch>
+  <arg name="event_topic" default="/events"/>
+  <arg name="static_topic" default="/event_slam/static_tracks"/>
+  <arg name="dynamic_topic" default="/event_slam/dynamic_tracks"/>
+  <arg name="debug_topic" default="/event_slam/debug"/>
+  <node pkg="event_slam_dynamic" type="dynamic_filter_node.py" name="dynamic_filter_node" output="screen">
+    <param name="event_topic" value="$(arg event_topic)"/>
+    <param name="static_topic" value="$(arg static_topic)"/>
+    <param name="dynamic_topic" value="$(arg dynamic_topic)"/>
+    <param name="debug_topic" value="$(arg debug_topic)"/>
+  </node>
+</launch>

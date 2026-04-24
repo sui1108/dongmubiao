@@ -29,6 +29,9 @@ class ResultVisualizerNode:
         self.use_event_background = bool(rospy.get_param("~use_event_background", True))
         self.save_snapshots = bool(rospy.get_param("~save_snapshots", True))
         self.snapshot_interval = int(rospy.get_param("~snapshot_interval", 50))
+        self.save_every_window = bool(rospy.get_param("~save_every_window", True))
+        self.save_detection_frames = bool(rospy.get_param("~save_detection_frames", True))
+        self.detection_frame_dir_name = rospy.get_param("~detection_frame_dir_name", "all_detection_frames")
 
         self.event_topic = rospy.get_param("~event_topic", "/events")
         self.static_topic = rospy.get_param("~static_topic", "/event_slam/static_tracks")
@@ -59,6 +62,8 @@ class ResultVisualizerNode:
             spatial_threshold_px=float(rospy.get_param("~cluster_spatial_threshold", 45.0)),
             min_cos_similarity=float(rospy.get_param("~cluster_min_cos_sim", 0.3)),
         )
+        self.all_frames_dir = Path(self.run_manager.run_dir) / self.detection_frame_dir_name
+        self.all_frames_dir.mkdir(parents=True, exist_ok=True)
 
         self.latest_events: List[Dict[str, object]] = []
         self.latest_static: List[Dict[str, object]] = []
@@ -99,7 +104,9 @@ class ResultVisualizerNode:
         self.summary.update_from_debug(payload)
         self.writer.append("debug", payload)
 
-        clusters = [c.to_dict() for c in self.clusterer.cluster(self.latest_dynamic)]
+        clusters = payload.get("clusters") if isinstance(payload.get("clusters"), list) else None
+        if clusters is None:
+            clusters = [c.to_dict() for c in self.clusterer.cluster(self.latest_dynamic)]
         self.latest_clusters = clusters
         self.summary.update_clusters(len(clusters))
 
@@ -128,6 +135,8 @@ class ResultVisualizerNode:
             f"active_tracks: {int(stats.get('active_track_count', len(self.latest_static) + len(self.latest_dynamic)))}",
             f"dynamic_tracks: {len(self.latest_dynamic)}",
             f"dynamic_clusters: {len(self.latest_clusters)}",
+            f"filtered_events: {int(stats.get('filtered_event_count', 0))}",
+            f"processing_ms: {float(stats.get('processing_ms', 0.0)):.2f}",
         ]
 
         frame = self.composer.compose(
@@ -139,6 +148,10 @@ class ResultVisualizerNode:
             info_lines=lines,
             use_event_accum=self.use_event_background,
         )
+
+        if self.save_detection_frames and (self.save_every_window or self.visual_frame_idx % max(1, self.snapshot_interval) == 0):
+            out_path = self.all_frames_dir / f"frame_{self.visual_frame_idx:06d}.png"
+            cv2.imwrite(str(out_path), frame)
 
         if self.save_snapshots and self.visual_frame_idx % max(1, self.snapshot_interval) == 0:
             out_path = Path(self.run_manager.run_dir) / "snapshots" / f"frame_{self.visual_frame_idx:06d}.png"

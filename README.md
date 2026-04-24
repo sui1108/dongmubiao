@@ -42,3 +42,15 @@ roslaunch event_slam_dynamic dynamic_filter_with_visualization.launch \
 - `dynamic_filter_node.py` 当前是最小可运行示例，算法仍需替换成你的真实前端。
 - clusterer 是轻量图聚类，未做时序融合与目标 ID 追踪。
 - 仅实现截图保存，未默认开启视频编码（后续可新增 `export_run_video.py`）。
+
+
+## RAW 自动评估
+```bash
+python3 tools/evaluate_raw_detection.py --check-raw-only
+python3 tools/evaluate_raw_detection.py   --raw-url https://github.com/sui1108/dongmubiao/releases/download/v0.1-data/recording_2026-04-17_18-58-20.raw   --delta-t-us 10000   --show-window false   --save-every-window true
+```
+
+评估输出：
+- `~/event_slam_runs/<run_id>/all_detection_frames/`
+- `~/event_slam_runs/<run_id>/evaluation_report.json`
+- `~/event_slam_runs/<run_id>/evaluation_report.txt`
