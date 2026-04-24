@@ -1,0 +1,50 @@
+<launch>
+  <!-- Core topics -->
+  <arg name="event_topic" default="/events"/>
+  <arg name="static_topic" default="/event_slam/static_tracks"/>
+  <arg name="dynamic_topic" default="/event_slam/dynamic_tracks"/>
+  <arg name="debug_topic" default="/event_slam/debug"/>
+
+  <!-- Optional raw bridge -->
+  <arg name="start_raw_bridge" default="false"/>
+  <arg name="bridge_raw_path" default=""/>
+  <arg name="bridge_delta_t_us" default="5000"/>
+  <arg name="bridge_replay_factor" default="1.0"/>
+  <arg name="bridge_max_duration_us" default="-1"/>
+
+  <!-- Run outputs -->
+  <arg name="run_root" default="$(env HOME)/event_slam_runs"/>
+  <arg name="run_note" default=""/>
+
+  <node pkg="event_slam_dynamic" type="dynamic_filter_node.py" name="dynamic_filter_node" output="screen">
+    <param name="event_topic" value="$(arg event_topic)"/>
+    <param name="static_topic" value="$(arg static_topic)"/>
+    <param name="dynamic_topic" value="$(arg dynamic_topic)"/>
+    <param name="debug_topic" value="$(arg debug_topic)"/>
+  </node>
+
+  <node pkg="event_slam_dynamic" type="result_visualizer_node.py" name="result_visualizer_node" output="screen">
+    <param name="event_topic" value="$(arg event_topic)"/>
+    <param name="static_topic" value="$(arg static_topic)"/>
+    <param name="dynamic_topic" value="$(arg dynamic_topic)"/>
+    <param name="debug_topic" value="$(arg debug_topic)"/>
+    <param name="run_root" value="$(arg run_root)"/>
+    <param name="run_note" value="$(arg run_note)"/>
+    <param name="bridge_enabled" value="$(arg start_raw_bridge)"/>
+    <param name="bridge_raw_path" value="$(arg bridge_raw_path)"/>
+    <param name="bridge_topic" value="$(arg event_topic)"/>
+    <param name="bridge_delta_t_us" value="$(arg bridge_delta_t_us)"/>
+    <param name="bridge_replay_factor" value="$(arg bridge_replay_factor)"/>
+    <param name="bridge_max_duration_us" value="$(arg bridge_max_duration_us)"/>
+  </node>
+
+  <group if="$(arg start_raw_bridge)">
+    <node pkg="event_slam_dynamic" type="raw_bridge_node.py" name="raw_bridge_node" output="screen">
+      <param name="raw_path" value="$(arg bridge_raw_path)"/>
+      <param name="topic" value="$(arg event_topic)"/>
+      <param name="delta_t_us" value="$(arg bridge_delta_t_us)"/>
+      <param name="replay_factor" value="$(arg bridge_replay_factor)"/>
+      <param name="max_duration_us" value="$(arg bridge_max_duration_us)"/>
+    </node>
+  </group>
+</launch>
