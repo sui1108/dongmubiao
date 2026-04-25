@@ -6,6 +6,7 @@
 - Python 3.8 / 3.9 / 3.10
 - `pip install -r windows_event_detection/requirements.txt`
 - 安装 Metavision SDK 并确保当前解释器可 `import metavision_core`
+- 所有源码与配置文件均为标准多行文本格式（UTF-8 + LF）。
 
 ## 运行
 ```bash

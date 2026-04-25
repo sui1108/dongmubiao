@@ -14,7 +14,9 @@ def str2bool(v: str) -> bool:
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Windows/PyCharm event RAW dynamic detection")
+    parser = argparse.ArgumentParser(
+        description="Windows/PyCharm event RAW dynamic detection"
+    )
     parser.add_argument("--raw", type=str, default=None)
     parser.add_argument("--raw-url", type=str, default=None)
     parser.add_argument("--download", action="store_true")
@@ -58,7 +60,12 @@ def main() -> int:
     from event_sae import EventSAE
     from event_tracker import EventTracker
     from motion_classifier import MotionClassifier
-    from raw_reader import RawReaderError, iter_event_windows, read_first_window_count, resolve_raw_path
+    from raw_reader import (
+        RawReaderError,
+        iter_event_windows,
+        read_first_window_count,
+        resolve_raw_path,
+    )
     from visualizer import DetectionVisualizer
 
     if args.raw_url:
@@ -121,7 +128,13 @@ def main() -> int:
         filtered, denoise_stats = denoiser.filter(events)
         sae.update(filtered)
         corners = corner_detector.detect(filtered)
-        frame_t = int(filtered[-1]["t"]) if len(filtered) else int(events[-1]["t"]) if len(events) else idx * cfg.delta_t_us
+        frame_t = (
+            int(filtered[-1]["t"])
+            if len(filtered)
+            else int(events[-1]["t"])
+            if len(events)
+            else idx * cfg.delta_t_us
+        )
         tracks = tracker.update(corners, frame_t)
         st, dy, uc, mstats = motion.classify(tracks, len(filtered), len(corners))
         objects, predicted_count = clusterer.update(dy, uc, filtered)
@@ -151,7 +164,10 @@ def main() -> int:
 
     report = write_evaluation(out_dir, cfg.to_dict(), frame_stats)
     print(f"[done] output directory: {out_dir.resolve()}")
-    print(f"[done] report dynamic_object_ratio={report['dynamic_object_ratio']:.3f}, max_object_gap={report['max_object_gap']}")
+    print(
+        f"[done] report dynamic_object_ratio={report['dynamic_object_ratio']:.3f}, "
+        f"max_object_gap={report['max_object_gap']}"
+    )
     return 0
 
 
