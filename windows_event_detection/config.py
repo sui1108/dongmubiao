@@ -55,9 +55,45 @@ class DetectionConfig:
     adaptive_threshold_enable: bool = True
 
     # Object cluster / memory
-    cluster_spatial_threshold: float = 30.0
-    cluster_velocity_cos_threshold: float = 0.4
-    cluster_min_tracks: int = 2
+    cluster_spatial_threshold: float = 70.0
+    cluster_velocity_cos_threshold: float = 0.75
+    cluster_speed_diff_threshold: float = 2.0
+    cluster_time_threshold_us: int = 50_000
+    cluster_min_tracks: int = 4
+    cluster_grid_cell_size: int = 50
+    min_track_confidence_for_cluster: float = 0.2
+    min_motion_speed: float = 0.5
+    low_speed_spatial_scale: float = 0.5
+
+    object_merge_iou_threshold: float = 0.03
+    object_merge_edge_distance: float = 40.0
+    object_merge_center_distance: float = 90.0
+    object_merge_velocity_cos_threshold: float = 0.65
+    object_merge_speed_diff_threshold: float = 2.5
+
+    min_motion_consistency_score: float = 0.45
+    max_speed_std_for_object: float = 3.0
+    max_direction_std_for_object: float = 0.8
+
+    min_bbox_area: int = 1000
+    min_bbox_width: int = 15
+    min_bbox_height: int = 15
+    min_object_tracks: int = 4
+    min_object_event_support: int = 20
+    max_bbox_aspect_ratio: float = 8.0
+    min_object_residual_mean: float = 1.0
+    min_object_avg_track_length: float = 3.0
+
+    object_match_iou_threshold: float = 0.02
+    object_match_center_distance: float = 100.0
+    object_match_velocity_cos_threshold: float = 0.6
+    object_match_speed_diff_threshold: float = 3.0
+    predicted_max_age: int = 4
+    predicted_event_support_radius: int = 25
+    predicted_min_event_support: int = 10
+    bbox_smooth_alpha: float = 0.6
+    velocity_smooth_alpha_object: float = 0.6
+
     object_lost_tolerance_frames: int = 8
     object_event_support_radius: int = 20
     object_min_event_support: int = 8
@@ -66,6 +102,9 @@ class DetectionConfig:
     show_window: bool = False
     save_every_window: bool = True
     save_detection_frames: bool = True
+    show_raw_clusters: bool = False
+    draw_velocity_arrow: bool = True
+    predicted_box_alpha: float = 0.45
     output_root: Path = Path("windows_event_detection/outputs")
 
     def to_dict(self) -> Dict[str, Any]:

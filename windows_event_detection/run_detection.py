@@ -6,6 +6,7 @@ import importlib
 from pathlib import Path
 import time
 from typing import Any, Dict, List
+import numpy as np
 from config import DetectionConfig
 
 
@@ -137,7 +138,7 @@ def main() -> int:
         )
         tracks = tracker.update(corners, frame_t)
         st, dy, uc, mstats = motion.classify(tracks, len(filtered), len(corners))
-        objects, predicted_count = clusterer.update(dy, uc, filtered)
+        objects, predicted_count, cstats = clusterer.update(dy, uc, filtered)
 
         processing_ms = (time.perf_counter() - t0) * 1000.0
         stat = {
@@ -149,6 +150,16 @@ def main() -> int:
             "dynamic_track_count": int(len(dy)),
             "dynamic_object_count": int(len(objects)),
             "processing_ms": float(processing_ms),
+            "raw_cluster_count": int(cstats["raw_cluster_count"]),
+            "merged_object_count": int(cstats["merged_object_count"]),
+            "filtered_object_count": int(cstats["filtered_object_count"]),
+            "final_object_count": int(cstats["final_object_count"]),
+            "cluster_time_ms": float(cstats["cluster_time_ms"]),
+            "object_merge_time_ms": float(cstats["object_merge_time_ms"]),
+            "object_tracking_time_ms": float(cstats["object_tracking_time_ms"]),
+            "avg_motion_consistency_score": float(np.mean([o.motion_consistency_score for o in objects]) if objects else 0.0),
+            "avg_speed_std": float(np.mean([o.speed_std for o in objects]) if objects else 0.0),
+            "avg_direction_std": float(np.mean([o.direction_std for o in objects]) if objects else 0.0),
             "fallback_triggered": bool(mstats["fallback_triggered"]),
             "predicted_object_count": int(predicted_count),
             "saved": False,

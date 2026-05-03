@@ -40,22 +40,26 @@ class DetectionVisualizer:
     ) -> Path:
         canvas = self._event_image(events)
 
-        for t in static_tracks:
-            if t.points:
-                cv2.circle(canvas, (int(t.points[-1].x), int(t.points[-1].y)), 2, (255, 255, 0), -1)
-        for t in dynamic_tracks:
-            if t.points:
-                cv2.circle(canvas, (int(t.points[-1].x), int(t.points[-1].y)), 3, (0, 255, 0), -1)
-        for t in uncertain_tracks:
-            if t.points:
-                cv2.circle(canvas, (int(t.points[-1].x), int(t.points[-1].y)), 2, (100, 100, 255), -1)
+        if self.cfg.show_raw_clusters:
+            for t in static_tracks:
+                if t.points:
+                    cv2.circle(canvas, (int(t.points[-1].x), int(t.points[-1].y)), 2, (255, 255, 0), -1)
+            for t in dynamic_tracks:
+                if t.points:
+                    cv2.circle(canvas, (int(t.points[-1].x), int(t.points[-1].y)), 3, (0, 255, 0), -1)
+            for t in uncertain_tracks:
+                if t.points:
+                    cv2.circle(canvas, (int(t.points[-1].x), int(t.points[-1].y)), 2, (100, 100, 255), -1)
 
         for obj in objects:
-            color = (0, 255, 255) if obj.predicted else (0, 165, 255)
+            color = (80, 160, 255) if obj.predicted else (0, 165, 255)
             x0, y0, x1, y1 = [int(v) for v in obj.last_bbox]
-            cv2.rectangle(canvas, (x0, y0), (x1, y1), color, 2)
+            cv2.rectangle(canvas, (x0, y0), (x1, y1), color, 1 if obj.predicted else 2)
             prefix = "P" if obj.predicted else "D"
-            cv2.putText(canvas, f"{prefix}-ID:{obj.object_id}", (x0, max(15, y0 - 5)), cv2.FONT_HERSHEY_SIMPLEX, 0.45, color, 1)
+            cv2.putText(canvas, f"{prefix}-ID:{obj.object_id} T:{obj.track_count} MC:{obj.motion_consistency_score:.2f}", (x0, max(15, y0 - 5)), cv2.FONT_HERSHEY_SIMPLEX, 0.42, color, 1)
+            if self.cfg.draw_velocity_arrow:
+                cx, cy = int(obj.last_center[0]), int(obj.last_center[1])
+                cv2.arrowedLine(canvas, (cx, cy), (int(cx + obj.velocity[0] * 6), int(cy + obj.velocity[1] * 6)), color, 1, tipLength=0.3)
 
         text_lines = [
             f"frame:{frame_idx}",
