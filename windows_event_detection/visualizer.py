@@ -54,8 +54,9 @@ class DetectionVisualizer:
             color = (0, 255, 255) if obj.predicted else (0, 165, 255)
             x0, y0, x1, y1 = [int(v) for v in obj.last_bbox]
             cv2.rectangle(canvas, (x0, y0), (x1, y1), color, 2)
-            prefix = "P" if obj.predicted else "D"
-            cv2.putText(canvas, f"{prefix}-ID:{obj.object_id}", (x0, max(15, y0 - 5)), cv2.FONT_HERSHEY_SIMPLEX, 0.45, color, 1)
+            state = "predicted" if obj.predicted else "detected"
+            label = f"Obj-ID:{obj.object_id} tc:{obj.track_count} mcs:{obj.motion_consistency_score:.2f} {state}"
+            cv2.putText(canvas, label, (x0, max(15, y0 - 5)), cv2.FONT_HERSHEY_SIMPLEX, 0.45, color, 1)
 
         text_lines = [
             f"frame:{frame_idx}",

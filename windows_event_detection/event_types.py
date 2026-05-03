@@ -47,3 +47,8 @@ class DynamicObject:
     confidence: float
     predicted: bool = False
     track_ids: List[int] = field(default_factory=list)
+    speed_mean: float = 0.0
+    speed_std: float = 0.0
+    direction_std: float = 0.0
+    motion_consistency_score: float = 0.0
+    track_count: int = 0

@@ -62,6 +62,33 @@ class DetectionConfig:
     object_event_support_radius: int = 20
     object_min_event_support: int = 8
 
+    # Same-frame object merge
+    same_frame_merge_iou_threshold: float = 0.02
+    same_frame_merge_edge_distance: float = 50.0
+    same_frame_merge_center_distance: float = 120.0
+    same_frame_merge_velocity_cos_threshold: float = 0.5
+    same_frame_merge_speed_diff_threshold: float = 3.5
+
+    # Cross-frame object matching
+    object_match_iou_threshold: float = 0.01
+    object_match_center_distance: float = 120.0
+    object_match_edge_distance: float = 60.0
+    object_match_velocity_cos_threshold: float = 0.45
+    object_match_speed_diff_threshold: float = 4.0
+    predicted_max_age: int = 8
+
+    # BBox fusion/smoothing
+    bbox_use_union_with_prediction: bool = True
+    bbox_padding_ratio_x: float = 0.12
+    bbox_padding_ratio_y: float = 0.12
+    bbox_min_padding: int = 8
+    bbox_smooth_alpha: float = 0.5
+
+    # Final duplicate suppression
+    final_nms_iou_threshold: float = 0.02
+    final_nms_edge_distance: float = 40.0
+    final_nms_center_distance: float = 100.0
+
     # Visualization
     show_window: bool = False
     save_every_window: bool = True
