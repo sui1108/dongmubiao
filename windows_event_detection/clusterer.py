@@ -226,6 +226,7 @@ class DynamicObjectClusterer:
                 suppressed_predicted += 1
 
         finals, dedup = self._merge_objects(finals, self.cfg.final_nms_iou_threshold, self.cfg.final_nms_edge_distance, self.cfg.final_nms_center_distance, 0.3, 999.0)
+        self.objects = {obj.object_id: obj for obj in finals}
         self.last_stats = {
             "same_frame_merged_count": same_merge,
             "matched_with_prediction_count": matched_with_prediction,
