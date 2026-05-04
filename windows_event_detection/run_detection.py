@@ -140,6 +140,7 @@ def main() -> int:
         objects, predicted_count = clusterer.update(dy, uc, filtered)
 
         processing_ms = (time.perf_counter() - t0) * 1000.0
+        merge_stats = clusterer.last_stats if hasattr(clusterer, "last_stats") else {}
         stat = {
             "frame_idx": idx,
             "raw_count": int(len(events)),
@@ -151,6 +152,11 @@ def main() -> int:
             "processing_ms": float(processing_ms),
             "fallback_triggered": bool(mstats["fallback_triggered"]),
             "predicted_object_count": int(predicted_count),
+            "same_frame_merged_count": int(merge_stats.get("same_frame_merged_count", 0)),
+            "matched_with_prediction_count": int(merge_stats.get("matched_with_prediction_count", 0)),
+            "suppressed_predicted_count": int(merge_stats.get("suppressed_predicted_count", 0)),
+            "final_duplicate_removed_count": int(merge_stats.get("final_duplicate_removed_count", 0)),
+            "object_ids": [int(o.object_id) for o in objects],
             "saved": False,
         }
 
