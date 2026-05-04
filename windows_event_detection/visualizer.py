@@ -36,6 +36,7 @@ class DetectionVisualizer:
         dynamic_tracks: List[Track],
         uncertain_tracks: List[Track],
         objects: List[DynamicObject],
+        raw_clusters: List[DynamicObject],
         stats: Dict[str, float],
     ) -> Path:
         canvas = self._event_image(events)
@@ -50,10 +51,17 @@ class DetectionVisualizer:
             if t.points:
                 cv2.circle(canvas, (int(t.points[-1].x), int(t.points[-1].y)), 2, (100, 100, 255), -1)
 
-        for obj in objects:
+        draw_objects = objects if self.cfg.show_final_objects_only else objects + raw_clusters
+        for obj in draw_objects:
             color = (0, 255, 255) if obj.predicted else (0, 165, 255)
             x0, y0, x1, y1 = [int(v) for v in obj.last_bbox]
-            cv2.rectangle(canvas, (x0, y0), (x1, y1), color, 2)
+            if obj in raw_clusters:
+                if not self.cfg.draw_raw_clusters:
+                    continue
+                color = (160, 160, 160)
+                cv2.rectangle(canvas, (x0, y0), (x1, y1), color, 1, lineType=cv2.LINE_4)
+            else:
+                cv2.rectangle(canvas, (x0, y0), (x1, y1), color, 2)
             prefix = "P" if obj.predicted else "D"
             cv2.putText(canvas, f"{prefix}-ID:{obj.object_id}", (x0, max(15, y0 - 5)), cv2.FONT_HERSHEY_SIMPLEX, 0.45, color, 1)
 
@@ -69,6 +77,8 @@ class DetectionVisualizer:
             cv2.putText(canvas, line, (10, yy), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1)
             yy += 18
 
+        if self.cfg.visualization_scale != 1.0:
+            canvas = cv2.resize(canvas, None, fx=self.cfg.visualization_scale, fy=self.cfg.visualization_scale)
         out = self.frame_dir / f"frame_{frame_idx:06d}.png"
         ok = cv2.imwrite(str(out), canvas)
         if not ok:

@@ -45,6 +45,9 @@ class DetectionConfig:
     max_track_history: int = 25
     velocity_smooth_alpha: float = 0.7
     match_same_polarity: bool = False
+    min_hits_before_new_id: int = 2
+    max_active_tracks: int = 300
+    max_dynamic_tracks: int = 300
 
     # Motion classifier
     dynamic_residual_threshold: float = 1.7
@@ -61,11 +64,22 @@ class DetectionConfig:
     object_lost_tolerance_frames: int = 8
     object_event_support_radius: int = 20
     object_min_event_support: int = 8
+    cluster_grid_cell_size: int = 60
+    bbox_use_union_with_prediction: bool = False
+    bbox_padding_ratio_x: float = 0.05
+    bbox_padding_ratio_y: float = 0.05
+    bbox_max_growth_ratio: float = 1.4
+    stable_age_priority: int = 5
 
     # Visualization
     show_window: bool = False
     save_every_window: bool = True
+    save_every_n_windows: int = 1
     save_detection_frames: bool = True
+    visualization_scale: float = 1.0
+    draw_track_history_len: int = 5
+    draw_raw_clusters: bool = False
+    show_final_objects_only: bool = True
     output_root: Path = Path("windows_event_detection/outputs")
 
     def to_dict(self) -> Dict[str, Any]:

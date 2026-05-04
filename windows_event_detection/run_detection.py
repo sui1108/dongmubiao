@@ -24,6 +24,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--delta-t-us", type=int, default=None)
     parser.add_argument("--show-window", type=str, default=None)
     parser.add_argument("--save-every-window", type=str, default=None)
+    parser.add_argument("--save-every-n-windows", type=int, default=None)
     parser.add_argument("--max-duration-us", type=int, default=None)
     parser.add_argument("--check-raw-only", action="store_true")
     return parser.parse_args()
@@ -80,6 +81,8 @@ def main() -> int:
         cfg.show_window = str2bool(args.show_window)
     if args.save_every_window is not None:
         cfg.save_every_window = str2bool(args.save_every_window)
+    if args.save_every_n_windows is not None:
+        cfg.save_every_n_windows = max(1, int(args.save_every_n_windows))
 
     if args.download or not cfg.raw_path.expanduser().resolve().exists():
         cfg.raw_path = download_raw(cfg.raw_url, cfg.raw_path, force_download=args.force_download)
@@ -137,7 +140,13 @@ def main() -> int:
         )
         tracks = tracker.update(corners, frame_t)
         st, dy, uc, mstats = motion.classify(tracks, len(filtered), len(corners))
-        objects, predicted_count = clusterer.update(dy, uc, filtered)
+        dy_before = len(dy)
+        if len(dy) > cfg.max_dynamic_tracks:
+            dy = sorted(dy, key=lambda t: (t.confidence, t.hits, -t.missed, -abs(t.residual)), reverse=True)[: cfg.max_dynamic_tracks]
+        ct0 = time.perf_counter()
+        clusters_out, predicted_count = clusterer.update(dy, uc, filtered)
+        cluster_ms = (time.perf_counter() - ct0) * 1000.0
+        objects = clusters_out["final_objects"]
 
         processing_ms = (time.perf_counter() - t0) * 1000.0
         stat = {
@@ -147,22 +156,29 @@ def main() -> int:
             "corner_count": int(len(corners)),
             "active_track_count": int(len(tracks)),
             "dynamic_track_count": int(len(dy)),
+            "dynamic_track_count_before_limit": int(dy_before),
             "dynamic_object_count": int(len(objects)),
             "processing_ms": float(processing_ms),
             "fallback_triggered": bool(mstats["fallback_triggered"]),
             "predicted_object_count": int(predicted_count),
+            "cluster_ms": float(cluster_ms),
+            "visualization_ms": 0.0,
+            "save_image_ms": 0.0,
             "saved": False,
         }
 
-        if cfg.save_detection_frames and cfg.save_every_window:
-            visualizer.draw_and_save(idx, filtered, st, dy, uc, objects, stat)
+        if cfg.save_detection_frames and cfg.save_every_window and idx % cfg.save_every_n_windows == 0:
+            vt0 = time.perf_counter()
+            visualizer.draw_and_save(idx, filtered, st, dy, uc, objects, clusters_out["raw_clusters"], stat)
+            stat["visualization_ms"] = (time.perf_counter() - vt0) * 1000.0
+            stat["save_image_ms"] = stat["visualization_ms"]
             stat["saved"] = True
 
         frame_stats.append(stat)
         pbar.update(1)
     pbar.close()
 
-    report = write_evaluation(out_dir, cfg.to_dict(), frame_stats)
+    report = write_evaluation(out_dir, cfg.to_dict(), frame_stats, width, height)
     print(f"[done] output directory: {out_dir.resolve()}")
     print(
         f"[done] report dynamic_object_ratio={report['dynamic_object_ratio']:.3f}, "

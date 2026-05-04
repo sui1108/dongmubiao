@@ -47,3 +47,4 @@ class DynamicObject:
     confidence: float
     predicted: bool = False
     track_ids: List[int] = field(default_factory=list)
+    suppressed_by: int = -1

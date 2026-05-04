@@ -16,7 +16,7 @@ def _max_gap(flags: List[bool]) -> int:
     return best
 
 
-def write_evaluation(output_dir: Path, config_dict: Dict, frame_stats: List[Dict]) -> Dict:
+def write_evaluation(output_dir: Path, config_dict: Dict, frame_stats: List[Dict], actual_width: int, actual_height: int) -> Dict:
     total = len(frame_stats)
     event_flags = [s["raw_count"] > 0 for s in frame_stats]
     corner_flags = [s["corner_count"] > 0 for s in frame_stats]
@@ -35,11 +35,24 @@ def write_evaluation(output_dir: Path, config_dict: Dict, frame_stats: List[Dict
         "max_dynamic_gap": int(_max_gap(dyn_track_flags)),
         "max_object_gap": int(_max_gap(dyn_obj_flags)),
         "avg_dynamic_tracks": float(sum(s["dynamic_track_count"] for s in frame_stats) / max(total, 1)),
+        "avg_dynamic_tracks_before_limit": float(sum(s.get("dynamic_track_count_before_limit", s["dynamic_track_count"]) for s in frame_stats) / max(total, 1)),
+        "avg_dynamic_tracks_after_limit": float(sum(s["dynamic_track_count"] for s in frame_stats) / max(total, 1)),
+        "avg_active_tracks": float(sum(s["active_track_count"] for s in frame_stats) / max(total, 1)),
         "avg_dynamic_objects": float(sum(s["dynamic_object_count"] for s in frame_stats) / max(total, 1)),
         "visualization_saved_count": int(sum(vis_flags)),
         "visualization_saved_ratio": float(sum(vis_flags) / max(total, 1)),
         "avg_processing_ms": float(sum(s["processing_ms"] for s in frame_stats) / max(total, 1)),
         "max_processing_ms": float(max((s["processing_ms"] for s in frame_stats), default=0.0)),
+        "avg_cluster_ms": float(sum(s.get("cluster_ms", 0.0) for s in frame_stats) / max(total, 1)),
+        "avg_visualization_ms": float(sum(s.get("visualization_ms", 0.0) for s in frame_stats) / max(total, 1)),
+        "avg_save_image_ms": float(sum(s.get("save_image_ms", 0.0) for s in frame_stats) / max(total, 1)),
+        "id_switch_count_estimate": int(sum(1 for s in frame_stats if s.get("id_switch_estimate", 0) > 0)),
+        "avg_object_age": float(sum(s.get("avg_object_age", 0.0) for s in frame_stats) / max(total, 1)),
+        "avg_id_lifetime": float(sum(s.get("avg_id_lifetime", 0.0) for s in frame_stats) / max(total, 1)),
+        "actual_sensor_width": int(actual_width),
+        "actual_sensor_height": int(actual_height),
+        "config_width": int(config_dict.get("width", 0)),
+        "config_height": int(config_dict.get("height", 0)),
         "fallback_trigger_count": int(sum(1 for s in frame_stats if s.get("fallback_triggered", False))),
         "predicted_object_frame_count": int(sum(s.get("predicted_object_count", 0) > 0 for s in frame_stats)),
         "proxy_metric_notice": "无人工标注，本报告仅为无标注 proxy metrics，不代表最终真实精度。",

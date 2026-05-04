@@ -70,9 +70,22 @@ class EventTracker:
             self.next_id += 1
             self._update_track(tr, c)
             self.tracks[tr.track_id] = tr
+            tr.state = "tentative"
 
         dead = [tid for tid, tr in self.tracks.items() if tr.missed > self.cfg.max_track_age]
         for tid in dead:
             del self.tracks[tid]
+
+        for tr in self.tracks.values():
+            if tr.hits >= self.cfg.min_hits_before_new_id:
+                tr.state = "confirmed"
+
+        if len(self.tracks) > self.cfg.max_active_tracks:
+            ranked = sorted(
+                self.tracks.values(),
+                key=lambda t: (t.confidence, t.hits, -t.missed, -abs(t.residual)),
+                reverse=True,
+            )[: self.cfg.max_active_tracks]
+            self.tracks = {t.track_id: t for t in ranked}
 
         return list(self.tracks.values())
