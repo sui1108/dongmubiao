@@ -116,7 +116,7 @@ class DynamicObjectClusterer:
 
         # keep predicted objects
         for oid, prev in list(self.objects.items()):
-            if oid in used or any(o.object_id == oid for o in detected_objs):
+            if oid in used or any(o.object_id == oid for o in final_objects):
                 continue
             prev.missed_count += 1
             if prev.missed_count <= self.cfg.object_lost_tolerance_frames:
