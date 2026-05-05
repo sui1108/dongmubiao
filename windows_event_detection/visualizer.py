@@ -37,6 +37,7 @@ class DetectionVisualizer:
         uncertain_tracks: List[Track],
         objects: List[DynamicObject],
         stats: Dict[str, float],
+        child_objects: List[DynamicObject] | None = None,
     ) -> Path:
         canvas = self._event_image(events)
 
@@ -50,6 +51,11 @@ class DetectionVisualizer:
             if t.points:
                 cv2.circle(canvas, (int(t.points[-1].x), int(t.points[-1].y)), 2, (100, 100, 255), -1)
 
+        if self.cfg.show_child_boxes and child_objects:
+            for obj in child_objects:
+                x0, y0, x1, y1 = [int(v) for v in obj.last_bbox]
+                cv2.rectangle(canvas, (x0, y0), (x1, y1), (128, 128, 255), 1)
+
         for obj in objects:
             color = (0, 255, 255) if obj.predicted else (0, 165, 255)
             x0, y0, x1, y1 = [int(v) for v in obj.last_bbox]
@@ -61,7 +67,7 @@ class DetectionVisualizer:
             f"frame:{frame_idx}",
             f"raw_events:{int(stats['raw_count'])} filtered:{int(stats['filtered_count'])}",
             f"corners:{int(stats['corner_count'])} active_tracks:{int(stats['active_track_count'])}",
-            f"dynamic_tracks:{int(stats['dynamic_track_count'])} dynamic_objects:{int(stats['dynamic_object_count'])}",
+            f"dynamic_tracks:{int(stats['dynamic_track_count'])} primary_objects:{int(stats['dynamic_object_count'])}",
             f"processing_ms:{stats['processing_ms']:.2f}",
         ]
         yy = 18

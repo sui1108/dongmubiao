@@ -148,6 +148,7 @@ def main() -> int:
             "active_track_count": int(len(tracks)),
             "dynamic_track_count": int(len(dy)),
             "dynamic_object_count": int(len(objects)),
+            "child_object_count": int(clusterer.last_child_count),
             "processing_ms": float(processing_ms),
             "fallback_triggered": bool(mstats["fallback_triggered"]),
             "predicted_object_count": int(predicted_count),

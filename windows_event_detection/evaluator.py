@@ -22,6 +22,7 @@ def write_evaluation(output_dir: Path, config_dict: Dict, frame_stats: List[Dict
     corner_flags = [s["corner_count"] > 0 for s in frame_stats]
     dyn_track_flags = [s["dynamic_track_count"] > 0 for s in frame_stats]
     dyn_obj_flags = [s["dynamic_object_count"] > 0 for s in frame_stats]
+    primary_obj_flags = dyn_obj_flags
     vis_flags = [s["saved"] for s in frame_stats]
 
     report = {
@@ -34,8 +35,12 @@ def write_evaluation(output_dir: Path, config_dict: Dict, frame_stats: List[Dict
         "dynamic_object_ratio": float(sum(dyn_obj_flags) / max(total, 1)),
         "max_dynamic_gap": int(_max_gap(dyn_track_flags)),
         "max_object_gap": int(_max_gap(dyn_obj_flags)),
+        "max_primary_object_gap": int(_max_gap(primary_obj_flags)),
         "avg_dynamic_tracks": float(sum(s["dynamic_track_count"] for s in frame_stats) / max(total, 1)),
         "avg_dynamic_objects": float(sum(s["dynamic_object_count"] for s in frame_stats) / max(total, 1)),
+        "avg_child_objects": float(sum(s.get("child_object_count", s["dynamic_object_count"]) for s in frame_stats) / max(total, 1)),
+        "avg_primary_objects": float(sum(s["dynamic_object_count"] for s in frame_stats) / max(total, 1)),
+        "primary_object_ratio": float(sum(primary_obj_flags) / max(total, 1)),
         "visualization_saved_count": int(sum(vis_flags)),
         "visualization_saved_ratio": float(sum(vis_flags) / max(total, 1)),
         "avg_processing_ms": float(sum(s["processing_ms"] for s in frame_stats) / max(total, 1)),

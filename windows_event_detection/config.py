@@ -56,11 +56,18 @@ class DetectionConfig:
 
     # Object cluster / memory
     cluster_spatial_threshold: float = 30.0
-    cluster_velocity_cos_threshold: float = 0.4
+    cluster_velocity_cos_threshold: float = 0.15
     cluster_min_tracks: int = 2
     object_lost_tolerance_frames: int = 8
     object_event_support_radius: int = 20
     object_min_event_support: int = 8
+    primary_edge_distance_threshold: float = 100.0
+    primary_center_distance_threshold: float = 180.0
+    primary_padding_ratio: float = 0.1
+    max_primary_bbox_area_ratio: float = 0.35
+    max_primary_bbox_width_ratio: float = 0.6
+    max_primary_bbox_height_ratio: float = 0.8
+    show_child_boxes: bool = False
 
     # Visualization
     show_window: bool = False
