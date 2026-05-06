@@ -73,6 +73,8 @@ class DetectionConfig:
 
     tight_bbox_shrink_threshold: float = 0.55
     tight_bbox_padding: int = 4
+    enable_tight_bbox_shrink: bool = False
+    tight_bbox_shrink_density_max: float = 0.02
 
     primary_merge_edge_distance: float = 120.0
     primary_merge_center_distance: float = 220.0

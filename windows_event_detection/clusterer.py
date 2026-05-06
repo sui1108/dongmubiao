@@ -3,6 +3,7 @@ from __future__ import annotations
 from collections import defaultdict
 from typing import Dict, List, Tuple
 import math
+import time
 import numpy as np
 
 from config import DetectionConfig
@@ -59,6 +60,68 @@ class DynamicObjectClusterer:
             return (max(0, tx0-p), max(0, ty0-p), min(self.cfg.width-1, tx1+p), min(self.cfg.height-1, ty1+p)), density, ratio
         return bbox, density, ratio
 
+    def _should_merge(self, a: DynamicObject, b: DynamicObject) -> bool:
+        iou = self._bbox_iou(a.last_bbox, b.last_bbox)
+        ed = self._edge_distance(a.last_bbox, b.last_bbox)
+        cd = math.hypot(a.last_center[0] - b.last_center[0], a.last_center[1] - b.last_center[1])
+        vm0 = math.hypot(*a.velocity)
+        vm1 = math.hypot(*b.velocity)
+        cos = 1.0 if vm0 * vm1 < 1e-6 else (a.velocity[0] * b.velocity[0] + a.velocity[1] * b.velocity[1]) / (vm0 * vm1)
+        return (
+            iou >= self.cfg.primary_merge_iou_threshold
+            or ed <= self.cfg.primary_merge_edge_distance
+            or (cd <= self.cfg.primary_merge_center_distance and cos >= self.cfg.primary_merge_velocity_cos_threshold)
+        )
+
+    def _merge_raw_to_primary_candidates(self, raw: List[DynamicObject], events: np.ndarray) -> List[DynamicObject]:
+        if not raw:
+            return []
+        parent = list(range(len(raw)))
+        def find(x):
+            while parent[x] != x:
+                parent[x] = parent[parent[x]]
+                x = parent[x]
+            return x
+        def union(a, b):
+            ra, rb = find(a), find(b)
+            if ra != rb:
+                parent[rb] = ra
+        for i in range(len(raw)):
+            for j in range(i + 1, len(raw)):
+                if self._should_merge(raw[i], raw[j]):
+                    union(i, j)
+        groups: Dict[int, List[int]] = defaultdict(list)
+        for i in range(len(raw)):
+            groups[find(i)].append(i)
+
+        candidates: List[DynamicObject] = []
+        for indices in groups.values():
+            members = [raw[i] for i in indices]
+            x0 = min(o.last_bbox[0] for o in members); y0 = min(o.last_bbox[1] for o in members)
+            x1 = max(o.last_bbox[2] for o in members); y1 = max(o.last_bbox[3] for o in members)
+            merged_bbox = (x0, y0, x1, y1)
+            support = self._event_support(events, merged_bbox)
+            area = max(1, (x1 - x0) * (y1 - y0))
+            density = support / area
+            should_shrink = self.cfg.enable_tight_bbox_shrink and len(members) <= 1 and density <= self.cfg.tight_bbox_shrink_density_max
+            if should_shrink:
+                merged_bbox, density, ratio = self._tighten_bbox(merged_bbox, events)
+            else:
+                ratio = 1.0
+            all_track_ids = [tid for o in members for tid in o.track_ids]
+            child_ids = [int(i) for i in range(len(members))]
+            obj = DynamicObject(
+                0, merged_bbox, ((merged_bbox[0] + merged_bbox[2]) / 2, (merged_bbox[1] + merged_bbox[3]) / 2),
+                (float(np.mean([o.velocity[0] for o in members])), float(np.mean([o.velocity[1] for o in members]))),
+                0, float(np.mean([o.confidence for o in members])), False, all_track_ids, kind="primary_candidate",
+                child_track_ids=all_track_ids, child_object_ids=child_ids, event_support=support, density=density, bbox_density=density, tight_bbox_area_ratio=ratio
+            )
+            setattr(obj, "child_count", len(members))
+            setattr(obj, "merged_from_count", len(members))
+            setattr(obj, "suppressed_child_boxes", max(0, len(members) - 1))
+            candidates.append(obj)
+        return candidates
+
     def _expand_roi(self, bbox):
         cx = (bbox[0]+bbox[2])/2; cy = (bbox[1]+bbox[3])/2
         w = (bbox[2]-bbox[0])*self.cfg.roi_expand_ratio; h = (bbox[3]-bbox[1])*self.cfg.roi_expand_ratio
@@ -97,11 +160,14 @@ class DynamicObjectClusterer:
         raw = self._build_raw(list(dynamic_tracks), events)
         self._last_raw_clusters = raw
         self.rejected_new_object_count = self.roi_match_count = self.roi_outside_reject_count = 0
+        t_merge = time.perf_counter()
+        primary_candidates = self._merge_raw_to_primary_candidates(raw, events)
+        self.last_primary_merge_ms = (time.perf_counter() - t_merge) * 1000.0
 
         unmatched_prev = set(self.tracked_objects.keys())
         matched_ids = set()
         detections = []
-        for r in raw:
+        for r in primary_candidates:
             best_id, best_score, reverse_motion = None, -1e9, False
             in_roi_ids = [oid for oid, prev in self.tracked_objects.items() if prev.roi_bbox and self._within(r.last_center, prev.roi_bbox)]
             if in_roi_ids:
@@ -164,14 +230,17 @@ class DynamicObjectClusterer:
 
         tracked_now = [o for o in detections if o.state in {'tentative','confirmed'}] + lost
         primary = [o for o in tracked_now if o.state == 'confirmed']
+        suppressed_child_boxes = sum(getattr(o, "suppressed_child_boxes", 0) for o in tracked_now if o.state in {"tentative", "confirmed"})
         self._last_primary_objects = primary
         return {
             'raw_clusters': raw,
             'tracked_objects': tracked_now,
             'primary_objects': primary,
+            'primary_candidates': primary_candidates,
             'predicted_count': len(lost),
             'displayed_predicted_count': len([o for o in lost if self.cfg.display_predicted_objects]),
-            'primary_merge_ms': 0.0,
+            'primary_merge_ms': self.last_primary_merge_ms,
+            'suppressed_child_box_count': suppressed_child_boxes,
             'tentative_count': len([o for o in tracked_now if o.state == 'tentative']),
             'rejected_new_object_count': self.rejected_new_object_count,
             'roi_match_count': self.roi_match_count,
