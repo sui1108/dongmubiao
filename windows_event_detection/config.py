@@ -56,6 +56,24 @@ class DetectionConfig:
     object_event_support_radius: int = 20
     object_min_event_support: int = 8
 
+    tentative_confirm_frames: int = 3
+    lost_tolerance_frames: int = 8
+    keep_id_on_direction_change: bool = True
+    reverse_motion_tolerance: float = 0.25
+    roi_expand_ratio: float = 2.0
+
+    min_new_object_tracks: int = 3
+    min_new_object_event_support: int = 12
+    min_new_object_density: float = 0.01
+    min_new_object_area: int = 80
+    max_new_object_aspect_ratio: float = 6.0
+    outside_roi_event_support_boost: float = 1.3
+    outside_roi_density_boost: float = 1.3
+    outside_roi_track_boost: float = 1.3
+
+    tight_bbox_shrink_threshold: float = 0.55
+    tight_bbox_padding: int = 4
+
     primary_merge_edge_distance: float = 120.0
     primary_merge_center_distance: float = 220.0
     primary_merge_iou_threshold: float = 0.01
@@ -75,6 +93,8 @@ class DetectionConfig:
     predicted_event_support_min: int = 20
     predicted_event_support_radius: int = 30
     display_predicted_objects: bool = False
+    show_lost_objects: bool = True
+    show_tentative_objects: bool = False
     explicitly_count_predicted: bool = False
 
     show_raw_clusters: bool = False

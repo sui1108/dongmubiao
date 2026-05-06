@@ -41,15 +41,18 @@ class DetectionVisualizer:
                 cv2.rectangle(canvas,(x0,y0),(x1,y1),(130,130,130),1,cv2.LINE_AA)
 
         for obj in display_objects:
-            if obj.predicted and not self.cfg.display_predicted_objects:
+            if obj.state == 'tentative' and not self.cfg.show_tentative_objects:
+                continue
+            if obj.state == 'lost' and not self.cfg.show_lost_objects:
                 continue
             if obj.suppressed_by and not self.cfg.show_child_boxes:
                 continue
-            color = (255, 220, 0) if obj.predicted else (0, 165, 255)
+            color = (180, 180, 90) if obj.state == 'lost' else ((120, 120, 120) if obj.state == 'tentative' else (0, 165, 255))
             x0, y0, x1, y1 = [int(v) for v in obj.last_bbox]
-            cv2.rectangle(canvas, (x0, y0), (x1, y1), color, 2)
-            prefix = "Pred-ID" if obj.predicted else "Obj-ID"
-            cv2.putText(canvas, f"{prefix}:{obj.object_id}", (x0, max(15, y0 - 5)), cv2.FONT_HERSHEY_SIMPLEX, 0.45, color, 1)
+            line_t = cv2.LINE_4 if obj.state == 'lost' else cv2.LINE_AA
+            cv2.rectangle(canvas, (x0, y0), (x1, y1), color, 2, line_t)
+            text = f"Obj-ID:{obj.object_id} {obj.state} age:{obj.age} hits:{obj.hits} d:{obj.density:.3f} reused_id:{obj.reused_id} reverse_motion:{obj.reverse_motion}"
+            cv2.putText(canvas, text, (x0, max(15, y0 - 5)), cv2.FONT_HERSHEY_SIMPLEX, 0.40, color, 1)
 
         cv2.putText(canvas, f"frame:{frame_idx} primary:{len(primary)} tracked:{len(tracked)} raw:{len(raw)}", (10, 18), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255,255,255), 1)
         out = self.frame_dir / f"frame_{frame_idx:06d}.png"

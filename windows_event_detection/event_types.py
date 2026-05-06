@@ -54,3 +54,11 @@ class DynamicObject:
     age: int = 1
     hits: int = 1
     event_support: int = 0
+    state: str = "tentative"
+    density: float = 0.0
+    bbox_density: float = 0.0
+    tight_bbox_area_ratio: float = 1.0
+    reused_id: bool = False
+    reverse_motion: bool = False
+    lost_recovered_count: int = 0
+    roi_bbox: Optional[Tuple[int, int, int, int]] = None

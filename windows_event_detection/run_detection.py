@@ -152,6 +152,13 @@ def main() -> int:
             "raw_cluster_count": int(len(obj_layers["raw_clusters"])),
             "tracked_object_count": int(len(obj_layers["tracked_objects"])),
             "primary_object_count": int(len(obj_layers["primary_objects"])),
+            "confirmed_object_count": int(sum(1 for o in obj_layers["tracked_objects"] if o.state == "confirmed")),
+            "tentative_object_count": int(obj_layers.get("tentative_count", 0)),
+            "rejected_new_object_count": int(obj_layers.get("rejected_new_object_count", 0)),
+            "roi_match_count": int(obj_layers.get("roi_match_count", 0)),
+            "roi_outside_reject_count": int(obj_layers.get("roi_outside_reject_count", 0)),
+            "direction_reverse_reuse_count": int(obj_layers.get("direction_reverse_reuse_count", 0)),
+            "tight_bbox_shrink_count": int(obj_layers.get("tight_bbox_shrink_count", 0)),
             "suppressed_child_box_count": int(sum(1 for o in obj_layers["tracked_objects"] if o.suppressed_by is not None)),
             "avg_child_objects_per_primary": float((sum(len(o.child_object_ids) for o in obj_layers["primary_objects"]) / max(len(obj_layers["primary_objects"]), 1)) if obj_layers["primary_objects"] else 0.0),
             "avg_primary_bbox_area": float((sum((o.last_bbox[2]-o.last_bbox[0])*(o.last_bbox[3]-o.last_bbox[1]) for o in obj_layers["primary_objects"]) / max(len(obj_layers["primary_objects"]), 1)) if obj_layers["primary_objects"] else 0.0),
@@ -166,6 +173,9 @@ def main() -> int:
             "avg_object_age": float((sum(o.age for o in obj_layers["tracked_objects"]) / max(len(obj_layers["tracked_objects"]), 1)) if obj_layers["tracked_objects"] else 0.0),
             "avg_id_lifetime": float((sum(o.hits for o in obj_layers["tracked_objects"]) / max(len(obj_layers["tracked_objects"]), 1)) if obj_layers["tracked_objects"] else 0.0),
             "avg_primary_object_age": float((sum(o.age for o in obj_layers["primary_objects"]) / max(len(obj_layers["primary_objects"]), 1)) if obj_layers["primary_objects"] else 0.0),
+            "avg_confirmed_object_age": float((sum(o.age for o in obj_layers["tracked_objects"] if o.state == "confirmed") / max(sum(1 for o in obj_layers["tracked_objects"] if o.state == "confirmed"), 1)) if obj_layers["tracked_objects"] else 0.0),
+            "avg_object_lost_recovered_count": float((sum(o.lost_recovered_count for o in obj_layers["tracked_objects"]) / max(len(obj_layers["tracked_objects"]), 1)) if obj_layers["tracked_objects"] else 0.0),
+            "bbox_density_avg": float((sum(o.bbox_density for o in obj_layers["tracked_objects"]) / max(len(obj_layers["tracked_objects"]), 1)) if obj_layers["tracked_objects"] else 0.0),
             "saved": False,
         }
 
