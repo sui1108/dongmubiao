@@ -137,7 +137,8 @@ def main() -> int:
         )
         tracks = tracker.update(corners, frame_t)
         st, dy, uc, mstats = motion.classify(tracks, len(filtered), len(corners))
-        objects, predicted_count = clusterer.update(dy, uc, filtered)
+        obj_layers = clusterer.update(dy, uc, filtered)
+        objects = obj_layers["primary_objects"]
 
         processing_ms = (time.perf_counter() - t0) * 1000.0
         stat = {
@@ -147,15 +148,29 @@ def main() -> int:
             "corner_count": int(len(corners)),
             "active_track_count": int(len(tracks)),
             "dynamic_track_count": int(len(dy)),
-            "dynamic_object_count": int(len(objects)),
+            "dynamic_object_count": int(len(obj_layers["tracked_objects"])),
+            "raw_cluster_count": int(len(obj_layers["raw_clusters"])),
+            "tracked_object_count": int(len(obj_layers["tracked_objects"])),
+            "primary_object_count": int(len(obj_layers["primary_objects"])),
+            "suppressed_child_box_count": int(sum(1 for o in obj_layers["tracked_objects"] if o.suppressed_by is not None)),
+            "avg_child_objects_per_primary": float((sum(len(o.child_object_ids) for o in obj_layers["primary_objects"]) / max(len(obj_layers["primary_objects"]), 1)) if obj_layers["primary_objects"] else 0.0),
+            "avg_primary_bbox_area": float((sum((o.last_bbox[2]-o.last_bbox[0])*(o.last_bbox[3]-o.last_bbox[1]) for o in obj_layers["primary_objects"]) / max(len(obj_layers["primary_objects"]), 1)) if obj_layers["primary_objects"] else 0.0),
+            "avg_primary_event_support": float((sum(o.event_support for o in obj_layers["primary_objects"]) / max(len(obj_layers["primary_objects"]), 1)) if obj_layers["primary_objects"] else 0.0),
             "processing_ms": float(processing_ms),
             "fallback_triggered": bool(mstats["fallback_triggered"]),
-            "predicted_object_count": int(predicted_count),
+            "predicted_object_count": int(obj_layers["predicted_count"]),
+            "displayed_predicted_object_count": int(obj_layers["displayed_predicted_count"]),
+            "primary_merge_ms": float(obj_layers["primary_merge_ms"]),
+            "id_switch_count": 0,
+            "primary_id_switch_count": 0,
+            "avg_object_age": float((sum(o.age for o in obj_layers["tracked_objects"]) / max(len(obj_layers["tracked_objects"]), 1)) if obj_layers["tracked_objects"] else 0.0),
+            "avg_id_lifetime": float((sum(o.hits for o in obj_layers["tracked_objects"]) / max(len(obj_layers["tracked_objects"]), 1)) if obj_layers["tracked_objects"] else 0.0),
+            "avg_primary_object_age": float((sum(o.age for o in obj_layers["primary_objects"]) / max(len(obj_layers["primary_objects"]), 1)) if obj_layers["primary_objects"] else 0.0),
             "saved": False,
         }
 
         if cfg.save_detection_frames and cfg.save_every_window:
-            visualizer.draw_and_save(idx, filtered, st, dy, uc, objects, stat)
+            visualizer.draw_and_save(idx, filtered, st, dy, uc, obj_layers, stat)
             stat["saved"] = True
 
         frame_stats.append(stat)
@@ -166,7 +181,7 @@ def main() -> int:
     print(f"[done] output directory: {out_dir.resolve()}")
     print(
         f"[done] report dynamic_object_ratio={report['dynamic_object_ratio']:.3f}, "
-        f"max_object_gap={report['max_object_gap']}"
+        f"max_primary_object_gap={report['max_primary_object_gap']}"
     )
     return 0
 

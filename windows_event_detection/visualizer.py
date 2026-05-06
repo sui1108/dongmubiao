@@ -28,54 +28,34 @@ class DetectionVisualizer:
         img[y[p <= 0], x[p <= 0], 2] = 255
         return img
 
-    def draw_and_save(
-        self,
-        frame_idx: int,
-        events: np.ndarray,
-        static_tracks: List[Track],
-        dynamic_tracks: List[Track],
-        uncertain_tracks: List[Track],
-        objects: List[DynamicObject],
-        stats: Dict[str, float],
-    ) -> Path:
+    def draw_and_save(self, frame_idx: int, events: np.ndarray, static_tracks: List[Track], dynamic_tracks: List[Track], uncertain_tracks: List[Track], objects: Dict[str, List[DynamicObject]], stats: Dict[str, float]) -> Path:
         canvas = self._event_image(events)
+        primary = objects.get('primary_objects', [])
+        raw = objects.get('raw_clusters', [])
+        tracked = objects.get('tracked_objects', [])
+        display_objects = primary if self.cfg.show_final_objects_only else tracked
 
-        for t in static_tracks:
-            if t.points:
-                cv2.circle(canvas, (int(t.points[-1].x), int(t.points[-1].y)), 2, (255, 255, 0), -1)
-        for t in dynamic_tracks:
-            if t.points:
-                cv2.circle(canvas, (int(t.points[-1].x), int(t.points[-1].y)), 3, (0, 255, 0), -1)
-        for t in uncertain_tracks:
-            if t.points:
-                cv2.circle(canvas, (int(t.points[-1].x), int(t.points[-1].y)), 2, (100, 100, 255), -1)
+        if self.cfg.show_raw_clusters:
+            for obj in raw:
+                x0,y0,x1,y1=[int(v) for v in obj.last_bbox]
+                cv2.rectangle(canvas,(x0,y0),(x1,y1),(130,130,130),1,cv2.LINE_AA)
 
-        for obj in objects:
-            color = (0, 255, 255) if obj.predicted else (0, 165, 255)
+        for obj in display_objects:
+            if obj.predicted and not self.cfg.display_predicted_objects:
+                continue
+            if obj.suppressed_by and not self.cfg.show_child_boxes:
+                continue
+            color = (255, 220, 0) if obj.predicted else (0, 165, 255)
             x0, y0, x1, y1 = [int(v) for v in obj.last_bbox]
             cv2.rectangle(canvas, (x0, y0), (x1, y1), color, 2)
-            prefix = "P" if obj.predicted else "D"
-            cv2.putText(canvas, f"{prefix}-ID:{obj.object_id}", (x0, max(15, y0 - 5)), cv2.FONT_HERSHEY_SIMPLEX, 0.45, color, 1)
+            prefix = "Pred-ID" if obj.predicted else "Obj-ID"
+            cv2.putText(canvas, f"{prefix}:{obj.object_id}", (x0, max(15, y0 - 5)), cv2.FONT_HERSHEY_SIMPLEX, 0.45, color, 1)
 
-        text_lines = [
-            f"frame:{frame_idx}",
-            f"raw_events:{int(stats['raw_count'])} filtered:{int(stats['filtered_count'])}",
-            f"corners:{int(stats['corner_count'])} active_tracks:{int(stats['active_track_count'])}",
-            f"dynamic_tracks:{int(stats['dynamic_track_count'])} dynamic_objects:{int(stats['dynamic_object_count'])}",
-            f"processing_ms:{stats['processing_ms']:.2f}",
-        ]
-        yy = 18
-        for line in text_lines:
-            cv2.putText(canvas, line, (10, yy), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1)
-            yy += 18
-
+        cv2.putText(canvas, f"frame:{frame_idx} primary:{len(primary)} tracked:{len(tracked)} raw:{len(raw)}", (10, 18), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255,255,255), 1)
         out = self.frame_dir / f"frame_{frame_idx:06d}.png"
+        if self.cfg.visualization_scale != 1.0:
+            canvas = cv2.resize(canvas, None, fx=self.cfg.visualization_scale, fy=self.cfg.visualization_scale)
         ok = cv2.imwrite(str(out), canvas)
         if not ok:
             raise RuntimeError(f"Failed to save visualization image: {out}")
-
-        if self.cfg.show_window:
-            cv2.imshow("event_detection", canvas)
-            cv2.waitKey(1)
-
         return out

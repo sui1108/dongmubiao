@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import List, Tuple
+from typing import List, Optional, Tuple
 
 
 @dataclass
@@ -47,3 +47,10 @@ class DynamicObject:
     confidence: float
     predicted: bool = False
     track_ids: List[int] = field(default_factory=list)
+    kind: str = "tracked_object"
+    child_track_ids: List[int] = field(default_factory=list)
+    child_object_ids: List[int] = field(default_factory=list)
+    suppressed_by: Optional[int] = None
+    age: int = 1
+    hits: int = 1
+    event_support: int = 0
