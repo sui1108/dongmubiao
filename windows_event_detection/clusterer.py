@@ -128,9 +128,10 @@ class DynamicObjectClusterer:
                 r.object_id=self.next_obj_id; self.next_obj_id+=1
             self.tracked_objects[r.object_id]=r
             if r.hits>=self.cfg.min_hits_before_new_id: detections.append(r)
+        seen_ids={r.object_id for r in raw}
         predicted=[]
         for oid,prev in list(self.tracked_objects.items()):
-            if any(d.object_id==oid for d in detections):
+            if oid in seen_ids:
                 prev.missed_count=0; prev.predicted=False; continue
             prev.missed_count+=1
             if prev.missed_count>self.cfg.predicted_max_age:
