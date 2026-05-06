@@ -66,6 +66,7 @@ class DetectionConfig:
     show_window: bool = False
     save_every_window: bool = True
     save_detection_frames: bool = True
+    show_child_boxes: bool = False
     output_root: Path = Path("windows_event_detection/outputs")
 
     def to_dict(self) -> Dict[str, Any]:

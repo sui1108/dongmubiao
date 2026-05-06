@@ -43,7 +43,7 @@ class EventTracker:
                 tr.missed += 1
                 continue
             px, py = self._predict(tr, frame_t)
-            best_idx, best_dist = -1, 1e9
+            best_idx, best_score = -1, -1e9
             for i in list(unmatched_corners):
                 c = corners[i]
                 if self.cfg.match_same_polarity and tr.points and c.polarity != tr.points[-1].polarity:
@@ -51,12 +51,17 @@ class EventTracker:
                 if tr.points and c.t - tr.points[-1].t > self.cfg.match_dt_us:
                     continue
                 d = math.hypot(c.x - px, c.y - py)
-                if d < best_dist and d <= self.cfg.match_radius_px:
-                    best_idx, best_dist = i, d
+                if d > self.cfg.match_radius_px * 1.5:
+                    continue
+                last = tr.points[-1]
+                d_last = math.hypot(c.x - last.x, c.y - last.y)
+                score = 0.7 * max(0.0, 1.0 - d / (self.cfg.match_radius_px * 1.5)) + 0.3 * max(0.0, 1.0 - d_last / (self.cfg.match_radius_px * 1.5))
+                if score > best_score:
+                    best_idx, best_score = i, score
             if best_idx >= 0:
                 c = corners[best_idx]
                 self._update_track(tr, c)
-                tr.residual = best_dist
+                tr.residual = max(0.0, self.cfg.match_radius_px * (1.0 - best_score))
                 unmatched_corners.remove(best_idx)
                 assigned_tracks.add(tid)
             else:

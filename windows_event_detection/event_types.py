@@ -43,7 +43,9 @@ class DynamicObject:
     last_bbox: Tuple[int, int, int, int]
     last_center: Tuple[float, float]
     velocity: Tuple[float, float]
+    age: int
     missed_count: int
     confidence: float
+    recent_event_support: float = 0.0
     predicted: bool = False
     track_ids: List[int] = field(default_factory=list)

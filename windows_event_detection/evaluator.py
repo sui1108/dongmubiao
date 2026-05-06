@@ -42,6 +42,13 @@ def write_evaluation(output_dir: Path, config_dict: Dict, frame_stats: List[Dict
         "max_processing_ms": float(max((s["processing_ms"] for s in frame_stats), default=0.0)),
         "fallback_trigger_count": int(sum(1 for s in frame_stats if s.get("fallback_triggered", False))),
         "predicted_object_frame_count": int(sum(s.get("predicted_object_count", 0) > 0 for s in frame_stats)),
+        "id_switch_count_estimate": int(max((s.get("id_switch_count_estimate", 0) for s in frame_stats), default=0)),
+        "bbox_shrink_suppressed_count": int(max((s.get("bbox_shrink_suppressed_count", 0) for s in frame_stats), default=0)),
+        "event_completion_used_count": int(max((s.get("event_completion_used_count", 0) for s in frame_stats), default=0)),
+        "avg_primary_bbox_area": float(sum(s.get("avg_primary_bbox_area", 0.0) for s in frame_stats) / max(total, 1)),
+        "avg_bbox_area_change_ratio": float(sum(s.get("avg_bbox_area_change_ratio", 1.0) for s in frame_stats) / max(total, 1)),
+        "avg_predicted_center_error": float(sum(s.get("avg_predicted_center_error", 0.0) for s in frame_stats) / max(total, 1)),
+        "avg_event_support_in_bbox": float(sum(s.get("avg_event_support_in_bbox", 0.0) for s in frame_stats) / max(total, 1)),
         "proxy_metric_notice": "无人工标注，本报告仅为无标注 proxy metrics，不代表最终真实精度。",
         "config": config_dict,
     }

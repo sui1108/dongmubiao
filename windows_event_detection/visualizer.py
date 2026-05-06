@@ -51,11 +51,14 @@ class DetectionVisualizer:
                 cv2.circle(canvas, (int(t.points[-1].x), int(t.points[-1].y)), 2, (100, 100, 255), -1)
 
         for obj in objects:
-            color = (0, 255, 255) if obj.predicted else (0, 165, 255)
+            color = (255, 255, 0) if obj.predicted else (0, 165, 255)
             x0, y0, x1, y1 = [int(v) for v in obj.last_bbox]
-            cv2.rectangle(canvas, (x0, y0), (x1, y1), color, 2)
-            prefix = "P" if obj.predicted else "D"
+            line_type = cv2.LINE_AA if not obj.predicted else cv2.LINE_4
+            cv2.rectangle(canvas, (x0, y0), (x1, y1), color, 2, lineType=line_type)
+            prefix = "Pred" if obj.predicted else "Obj"
             cv2.putText(canvas, f"{prefix}-ID:{obj.object_id}", (x0, max(15, y0 - 5)), cv2.FONT_HERSHEY_SIMPLEX, 0.45, color, 1)
+            if self.cfg.show_child_boxes and obj.track_ids:
+                cv2.putText(canvas, f"tracks:{len(obj.track_ids)}", (x0, min(self.height - 8, y1 + 14)), cv2.FONT_HERSHEY_SIMPLEX, 0.4, (180, 180, 180), 1)
 
         text_lines = [
             f"frame:{frame_idx}",

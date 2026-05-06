@@ -6,6 +6,7 @@ import importlib
 from pathlib import Path
 import time
 from typing import Any, Dict, List
+import numpy as np
 from config import DetectionConfig
 
 
@@ -151,6 +152,16 @@ def main() -> int:
             "processing_ms": float(processing_ms),
             "fallback_triggered": bool(mstats["fallback_triggered"]),
             "predicted_object_count": int(predicted_count),
+            "id_switch_count_estimate": int(clusterer.id_switch_count_estimate),
+            "bbox_shrink_suppressed_count": int(clusterer.bbox_shrink_suppressed_count),
+            "event_completion_used_count": int(clusterer.event_completion_used_count),
+            "avg_primary_bbox_area": float(np.mean([(o.last_bbox[2] - o.last_bbox[0]) * (o.last_bbox[3] - o.last_bbox[1]) for o in objects]) if objects else 0.0),
+            "avg_bbox_area_change_ratio": float(np.mean([
+                max(1.0, (o.last_bbox[2] - o.last_bbox[0]) * (o.last_bbox[3] - o.last_bbox[1])) / max(1.0, (clusterer.objects[o.object_id].last_bbox[2] - clusterer.objects[o.object_id].last_bbox[0]) * (clusterer.objects[o.object_id].last_bbox[3] - clusterer.objects[o.object_id].last_bbox[1]))
+                for o in objects if o.object_id in clusterer.objects
+            ]) if objects else 1.0),
+            "avg_predicted_center_error": float(clusterer.total_predicted_center_error / max(1, clusterer.predicted_center_error_count)),
+            "avg_event_support_in_bbox": float(np.mean([clusterer._event_support(o.last_bbox, filtered) for o in objects]) if objects else 0.0),
             "saved": False,
         }
 
